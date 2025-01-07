@@ -7,16 +7,18 @@ import (
 	"strings"
 )
 
+var GitDir string
+
 func getFileType(fileName string) string {
 	nameParts := strings.Split(fileName, ".")
 	return strings.TrimSpace(nameParts[len(nameParts)-1])
 }
 
 func LoadConfig() map[string]string {
-	file, _ := os.Open("credentials.txt")
+	file, _ := os.Open(".env")
 	if file == nil {
-		os.Create("credentials.txt")
-		file, _ = os.Open("credentials.txt")
+		os.Create(".env")
+		file, _ = os.Open(".env")
 	}
 	data, err := io.ReadAll(file)
 	if err != nil {
@@ -30,6 +32,7 @@ func LoadConfig() map[string]string {
 			config[parts[0]] = parts[1]
 		}
 	}
+	GitDir = config["gitDir"]
 	return config
 }
 
@@ -38,7 +41,7 @@ func SaveConfig(config map[string]string) {
 	for key, value := range config {
 		content.WriteString(fmt.Sprintf("%s=%s\n", key, value))
 	}
-	file, _ := os.OpenFile("credentials.txt", os.O_RDWR|os.O_CREATE, 0755)
+	file, _ := os.OpenFile(".env", os.O_RDWR|os.O_CREATE, 0755)
 	_, err := io.WriteString(file, content.String())
 	if err != nil {
 		panic(err)

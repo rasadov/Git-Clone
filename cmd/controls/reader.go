@@ -64,7 +64,8 @@ func getObjectData(data []byte) ([]string, error) {
 }
 
 func ReadObject(readerType, hash string) (string, error) {
-	path := fmt.Sprintf(".git/objects/%v/%v", hash[0:2], hash[2:])
+
+	path := fmt.Sprintf("%s/objects/%v/%v", GitDir, hash[0:2], hash[2:])
 	file, err := os.Open(path)
 	reader, _ := zlib.NewReader(io.Reader(file))
 	byteData, _ := io.ReadAll(reader)
@@ -96,7 +97,7 @@ func ReadObject(readerType, hash string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return strconv.Itoa(int(stats.Size())), nil
+		return strconv.FormatInt(stats.Size(), 10), nil
 	default:
 		return "", fmt.Errorf("invalid type: %s", readerType)
 

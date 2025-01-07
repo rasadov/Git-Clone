@@ -10,12 +10,48 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type entry struct {
 	fileName string
 	byteData []byte
+}
+
+func CreateObject(path, writePath, fileType string) string {
+	var contentAndHeader string
+	file, _ := os.ReadFile(path)
+	stats, _ := os.Stat(path)
+	content := string(file)
+	if fileType == "" {
+		contentAndHeader = fmt.Sprintf("blob %d\x00%s", stats.Size(), content)
+	} else {
+		contentAndHeader = fmt.Sprintf("%s %d\x00%s", fileType, stats.Size(), content)
+	}
+
+	sha := sha1.Sum([]byte(contentAndHeader))
+	hash := fmt.Sprintf("%x", sha)
+	blobName := []rune(hash)
+	blobPath := GitDir + "/objects/"
+	for i, v := range blobName {
+		blobPath += string(v)
+		if i == 1 {
+			blobPath += "/"
+		}
+	}
+	var buffer bytes.Buffer
+	writer := zlib.NewWriter(&buffer)
+	writer.Write([]byte(contentAndHeader))
+	writer.Close()
+	os.MkdirAll(filepath.Dir(blobPath), os.ModePerm)
+	fileCreated, _ := os.Create(blobPath)
+	defer fileCreated.Close()
+	if writePath != "" {
+		os.WriteFile(writePath, buffer.Bytes(), 0644)
+	}
+	return hash
 }
 
 func getGitIgnore() ([]string, []string) {
@@ -77,7 +113,7 @@ func calcTreeHash(dir string) ([]byte, []byte) {
 		fileType := getFileType(fileName)
 		ignore := validateFile(fileName, fileType, ignoreList, ignoreTypes)
 
-		if fileInfo.Name() == ".git" || ignore {
+		if fileName == ".git" || fileName == GitDir || ignore {
 			continue
 		}
 
@@ -112,53 +148,45 @@ func calcTreeHash(dir string) ([]byte, []byte) {
 	return sha1Val.Sum(nil), byteData
 }
 
-func CreateObject(path, writePath, fileType string) string {
-	var contentAndHeader string
-	file, _ := os.ReadFile(path)
-	stats, _ := os.Stat(path)
-	content := string(file)
-	if fileType == "" {
-		contentAndHeader = fmt.Sprintf("blob %d\x00%s", stats.Size(), content)
-	} else {
-		contentAndHeader = fmt.Sprintf("%s %d\x00%s", fileType, stats.Size(), content)
-	}
-
-	sha := sha1.Sum([]byte(contentAndHeader))
-	hash := fmt.Sprintf("%x", sha)
-	blobName := []rune(hash)
-	blobPath := ".git/objects/"
-	for i, v := range blobName {
-		blobPath += string(v)
-		if i == 1 {
-			blobPath += "/"
-		}
-	}
-	var buffer bytes.Buffer
-	writer := zlib.NewWriter(&buffer)
-	writer.Write([]byte(contentAndHeader))
-	writer.Close()
-	os.MkdirAll(filepath.Dir(blobPath), os.ModePerm)
-	fileCreated, _ := os.Create(blobPath)
-	defer fileCreated.Close()
-	if writePath != "" {
-		os.WriteFile(writePath, buffer.Bytes(), 0644)
-	}
-	return hash
-}
-
 func WriteTree() string {
 	currentDir, _ := os.Getwd()
 	hash, content := calcTreeHash(currentDir)
 	treeHash := hex.EncodeToString(hash)
-	os.Mkdir(filepath.Join(".git", "objects", treeHash[:2]), 0755)
+	os.Mkdir(filepath.Join(GitDir, "objects", treeHash[:2]), 0755)
 	var buffer bytes.Buffer
 	writer := zlib.NewWriter(&buffer)
 	writer.Write(content)
 	writer.Close()
-	os.WriteFile(filepath.Join(".git", "objects", treeHash[:2], treeHash[2:]), buffer.Bytes(), 0644)
+	os.WriteFile(filepath.Join(GitDir, "objects", treeHash[:2], treeHash[2:]), buffer.Bytes(), 0644)
 	return treeHash
 }
 
-func CreateCommit(treeHash, parentHash, message string) string {
-	return ""
+func CreateCommit(treeHash, parentHash, message, author, email string) string {
+	builder := strings.Builder{}
+	timestamp := strconv.FormatInt(time.Now().Round(0).Unix(), 10)
+	authorData := fmt.Sprintf("%s <%s> %s +0000", author, email, timestamp)
+	if parentHash != "" {
+		builder.WriteString(
+			fmt.Sprintf("tree %s\nparent %s\nauthor %s\ncommitter %s\n\n%s",
+				treeHash, parentHash, authorData, authorData, message))
+	} else {
+		builder.WriteString(
+			fmt.Sprintf("tree %s\nauthor %s\ncommitter %s\n\n%s",
+				treeHash, authorData, authorData, message))
+	}
+	contentStr := builder.String()
+	fullData := fmt.Sprintf("commit %d\x00%s", len(contentStr), contentStr)
+	shaVal := sha1.New()
+	io.WriteString(shaVal, fullData)
+	hash := shaVal.Sum(nil)
+	commitHash := hex.EncodeToString(hash)
+	os.Mkdir(filepath.Join(GitDir, "objects", commitHash[:2]), 0755)
+	bytesData := []byte(fullData)
+	var buffer bytes.Buffer
+	writer := zlib.NewWriter(&buffer)
+	writer.Write(bytesData)
+	writer.Close()
+	os.WriteFile(filepath.Join(GitDir, "objects", commitHash[:2], commitHash[2:]), buffer.Bytes(), 0644)
+	os.WriteFile(filepath.Join(GitDir, "heads", "main"), []byte(commitHash), 0644)
+	return commitHash
 }

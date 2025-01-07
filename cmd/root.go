@@ -7,6 +7,7 @@ import (
 )
 
 var Settings map[string]string
+var GitDir string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -26,4 +27,5 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	Settings = controls.LoadConfig()
+	GitDir = Settings["gitDir"]
 }
