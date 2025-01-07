@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"GitClone/cmd/utils"
+	"GitClone/cmd/controls"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +16,7 @@ var writeTreeCmd = &cobra.Command{
 			we'll just assume that all files in the working directory are staged.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(utils.WriteTree())
+		fmt.Println(controls.WriteTree())
 	},
 }
 

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"GitClone/cmd/utils"
+	"GitClone/cmd/controls"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +14,7 @@ var catFileCmd = &cobra.Command{
 This command is used to display the contents of a file in the git repository.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		res, err := utils.ReadObject(args[0], args[1])
+		res, err := controls.ReadObject(args[0], args[1])
 		if err != nil {
 			panic(err)
 		}

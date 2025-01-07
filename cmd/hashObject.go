@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"GitClone/cmd/utils"
+	"GitClone/cmd/controls"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +15,7 @@ var hashObjectCmd = &cobra.Command{
 		writePath, _ := cmd.Flags().GetString("write")
 		objectType, _ := cmd.Flags().GetString("type")
 		path := args[0]
-		fmt.Println(utils.CreateObject(path, writePath, objectType))
+		fmt.Println(controls.CreateObject(path, writePath, objectType))
 	},
 }
 

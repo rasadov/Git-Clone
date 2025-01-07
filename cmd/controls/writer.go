@@ -1,4 +1,4 @@
-package utils
+package controls
 
 import (
 	"bytes"
@@ -16,11 +16,6 @@ import (
 type entry struct {
 	fileName string
 	byteData []byte
-}
-
-func getFileType(fileName string) string {
-	nameParts := strings.Split(fileName, ".")
-	return strings.TrimSpace(nameParts[len(nameParts)-1])
 }
 
 func getGitIgnore() ([]string, []string) {
@@ -162,4 +157,8 @@ func WriteTree() string {
 	writer.Close()
 	os.WriteFile(filepath.Join(".git", "objects", treeHash[:2], treeHash[2:]), buffer.Bytes(), 0644)
 	return treeHash
+}
+
+func CreateCommit(treeHash, parentHash, message string) string {
+	return ""
 }

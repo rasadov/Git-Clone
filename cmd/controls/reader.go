@@ -3,7 +3,7 @@ This file contains reader functions
 These include Read a blob object and a tree object
 */
 
-package utils
+package controls
 
 import (
 	"compress/zlib"

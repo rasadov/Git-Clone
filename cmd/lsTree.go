@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"GitClone/cmd/utils"
+	"GitClone/cmd/controls"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -13,7 +13,7 @@ var lsTreeCmd = &cobra.Command{
 	Long:  `ls-tree is used to list the contents of a tree object.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		treeHash := args[0]
-		res, err := utils.ReadObject("p", treeHash)
+		res, err := controls.ReadObject("p", treeHash)
 		if err != nil {
 			panic(err)
 		}
