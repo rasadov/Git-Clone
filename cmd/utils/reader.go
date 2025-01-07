@@ -10,60 +10,93 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
-func getObjectData(path string) ([]string, error) {
-	file, _ := os.Open(path)
-	r, _ := zlib.NewReader(io.Reader(file))
-	s, _ := io.ReadAll(r)
-	parts := strings.Split(string(s), "\x00")
-	if err := r.Close(); err != nil {
-		return nil, err
+func skipTreeHeader(data []byte) []byte {
+	headerEnd := 0
+	for data[headerEnd] != 0 {
+		headerEnd++
 	}
+	return data[headerEnd+1:]
+}
+
+func getTreeContent(data []byte) string {
+	var res strings.Builder
+	data = skipTreeHeader(data)
+
+	ind := 0
+	for ind < len(data) {
+		modeEnd := ind
+		for data[modeEnd] != ' ' {
+			modeEnd++
+		}
+		mode := string(data[ind:modeEnd])
+		ind = modeEnd + 1
+
+		nameEnd := ind
+		for data[nameEnd] != 0 {
+			nameEnd++
+		}
+		name := string(data[ind:nameEnd])
+		ind = nameEnd + 1
+
+		if ind+20 > len(data) {
+			break
+		}
+
+		sha := data[ind : ind+20]
+		ind += 20
+
+		res.WriteString(fmt.Sprintf("%s %s %x\n", mode, name, sha))
+	}
+	return res.String()
+}
+
+func getObjectType(data []byte) string {
+	return strings.Split(string(data), " ")[0]
+}
+
+func getObjectData(data []byte) ([]string, error) {
+	parts := strings.Split(string(data), "\x00")
 	return parts, nil
 }
 
-func getObjectHeaderPart(ind int, path string) (string, error) {
-	parts, err := getObjectData(path)
-	if err != nil {
-		return "", err
-	}
-	headerParts := strings.Split(parts[0], " ")
-	if ind >= len(headerParts) {
-		return "", fmt.Errorf("index out of range")
-	}
-	return headerParts[ind], nil
-}
-
 func ReadObject(readerType, hash string) (string, error) {
-	// Get the type of the object
 	path := fmt.Sprintf(".git/objects/%v/%v", hash[0:2], hash[2:])
+	file, err := os.Open(path)
+	r, _ := zlib.NewReader(io.Reader(file))
+	s, _ := io.ReadAll(r)
+
 	switch readerType {
 	case "e":
-		_, err := os.Open(path)
 		if err != nil {
 			return "", err
 		}
 		return "Object exists", nil
 	case "p":
-		parts, err := getObjectData(path)
+		fileType := getObjectType(s)
+		if fileType == "tree" {
+			return getTreeContent(s), nil
+		}
+		parts, err := getObjectData(s)
 		if err != nil {
 			return "", err
 		}
-		return parts[1], nil
+		result := strings.Join(parts[1:], "\n")
+		return result, nil
 	case "t":
-		res, err := getObjectHeaderPart(0, path)
 		if err != nil {
 			return "", err
 		}
-		return res, nil
+		return getObjectType(s), nil
 	case "s":
-		res, err := getObjectHeaderPart(1, path)
+		stats, err := os.Stat(path)
 		if err != nil {
 			return "", err
 		}
-		return res, nil
+		return strconv.Itoa(int(stats.Size())), nil
 	default:
 		return "", fmt.Errorf("invalid type: %s", readerType)
 
