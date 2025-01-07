@@ -26,28 +26,28 @@ func getTreeContent(data []byte) string {
 	var res strings.Builder
 	data = skipTreeHeader(data)
 
-	ind := 0
-	for ind < len(data) {
-		modeEnd := ind
+	i := 0
+	for i < len(data) {
+		modeEnd := i
 		for data[modeEnd] != ' ' {
 			modeEnd++
 		}
-		mode := string(data[ind:modeEnd])
-		ind = modeEnd + 1
+		mode := string(data[i:modeEnd])
+		i = modeEnd + 1
 
-		nameEnd := ind
+		nameEnd := i
 		for data[nameEnd] != 0 {
 			nameEnd++
 		}
-		name := string(data[ind:nameEnd])
-		ind = nameEnd + 1
+		name := string(data[i:nameEnd])
+		i = nameEnd + 1
 
-		if ind+20 > len(data) {
+		if i+20 > len(data) {
 			break
 		}
 
-		sha := data[ind : ind+20]
-		ind += 20
+		sha := data[i : i+20]
+		i += 20
 
 		res.WriteString(fmt.Sprintf("%s %s %x\n", mode, name, sha))
 	}
@@ -66,8 +66,8 @@ func getObjectData(data []byte) ([]string, error) {
 func ReadObject(readerType, hash string) (string, error) {
 	path := fmt.Sprintf(".git/objects/%v/%v", hash[0:2], hash[2:])
 	file, err := os.Open(path)
-	r, _ := zlib.NewReader(io.Reader(file))
-	s, _ := io.ReadAll(r)
+	reader, _ := zlib.NewReader(io.Reader(file))
+	byteData, _ := io.ReadAll(reader)
 
 	switch readerType {
 	case "e":
@@ -76,11 +76,11 @@ func ReadObject(readerType, hash string) (string, error) {
 		}
 		return "Object exists", nil
 	case "p":
-		fileType := getObjectType(s)
+		fileType := getObjectType(byteData)
 		if fileType == "tree" {
-			return getTreeContent(s), nil
+			return getTreeContent(byteData), nil
 		}
-		parts, err := getObjectData(s)
+		parts, err := getObjectData(byteData)
 		if err != nil {
 			return "", err
 		}
@@ -90,7 +90,7 @@ func ReadObject(readerType, hash string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return getObjectType(s), nil
+		return getObjectType(byteData), nil
 	case "s":
 		stats, err := os.Stat(path)
 		if err != nil {
