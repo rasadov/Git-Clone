@@ -47,3 +47,17 @@ func SaveConfig(config map[string]string) {
 		panic(err)
 	}
 }
+
+func GetHead(branch string) string {
+	file, _ := os.Open(GitDir + "/heads/" + branch)
+	data, _ := io.ReadAll(file)
+	return string(data)
+}
+
+func UpdateHead(branch, hash string) {
+	file, _ := os.OpenFile(GitDir+"/heads/"+branch, os.O_RDWR|os.O_CREATE, 0755)
+	_, err := io.WriteString(file, hash)
+	if err != nil {
+		panic(err)
+	}
+}
