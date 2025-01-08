@@ -23,7 +23,6 @@ func init() {
 }
 
 func initialize() {
-	fmt.Println(GitDir)
 	for _, dir := range []string{GitDir, GitDir + "/objects", GitDir + "/refs", GitDir + "/heads"} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			fmt.Sprintf("Error creating directory: %s\n", dir)
@@ -35,6 +34,6 @@ func initialize() {
 	if err := os.WriteFile(GitDir+"/HEAD", headFileContents, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing file: %s\n", err)
 	}
-
+	os.Create(GitDir + "/config")
 	fmt.Println("Initialized git directory")
 }
