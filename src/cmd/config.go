@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"GitClone/cmd/controls"
 	"fmt"
-
 	"github.com/spf13/cobra"
+	"src/cmd/controls"
 )
 
 var configCmd = &cobra.Command{

@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"GitClone/cmd/controls"
 	"github.com/spf13/cobra"
+	"src/cmd/controls"
 )
 
 // logCmd represents the log command

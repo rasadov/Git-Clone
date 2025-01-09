@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -12,6 +13,11 @@ var GitDir string
 func getFileType(fileName string) string {
 	nameParts := strings.Split(fileName, ".")
 	return strings.TrimSpace(nameParts[len(nameParts)-1])
+}
+
+func getFileTypeFromContent(content string) string {
+	parts := strings.Split(content, " ")
+	return parts[0]
 }
 
 func LoadConfig() map[string]string {
@@ -49,13 +55,13 @@ func SaveConfig(config map[string]string) {
 }
 
 func GetHead(branch string) string {
-	file, _ := os.Open(GitDir + "/heads/" + branch)
+	file, _ := os.Open(filepath.Join(GitDir, "refs", "heads", branch))
 	data, _ := io.ReadAll(file)
 	return string(data)
 }
 
 func UpdateHead(branch, hash string) {
-	file, _ := os.OpenFile(GitDir+"/heads/"+branch, os.O_RDWR|os.O_CREATE, 0755)
+	file, _ := os.OpenFile(filepath.Join(GitDir, "heads", branch), os.O_RDWR|os.O_CREATE, 0755)
 	_, err := io.WriteString(file, hash)
 	if err != nil {
 		panic(err)

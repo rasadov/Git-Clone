@@ -112,7 +112,6 @@ func calcTreeHash(dir string) ([]byte, []byte) {
 		fileName := fileInfo.Name()
 		fileType := getFileType(fileName)
 		ignore := validateFile(fileName, fileType, ignoreList, ignoreTypes)
-
 		if fileName == ".git" || fileName == GitDir || ignore {
 			continue
 		}
@@ -120,13 +119,21 @@ func calcTreeHash(dir string) ([]byte, []byte) {
 		if !fileInfo.IsDir() {
 			file, _ := os.Open(filepath.Join(dir, fileInfo.Name()))
 			byteData, _ := io.ReadAll(file)
+			var buffer bytes.Buffer
+			writer := zlib.NewWriter(&buffer)
+			writer.Write(byteData)
+			writer.Close()
 			str := fmt.Sprintf("blob %d\u0000%s", len(byteData), string(byteData))
 			sha1Val := sha1.New()
 			io.WriteString(sha1Val, str)
+			hash := sha1Val.Sum(nil)
+			hashStr := hex.EncodeToString(hash)
 			str = fmt.Sprintf("100644 %s\u0000", fileInfo.Name())
-			byteData = append([]byte(str), sha1Val.Sum(nil)...)
+			byteData = append([]byte(str), hash...)
 			entries = append(entries, entry{fileInfo.Name(), byteData})
 			contentSize += len(byteData)
+			os.Mkdir(filepath.Join(GitDir, "objects", hashStr[:2]), 0755)
+			os.WriteFile(filepath.Join(GitDir, "objects", hashStr[:2], hashStr[2:]), buffer.Bytes(), 0644)
 		} else {
 			byteData, _ := calcTreeHash(filepath.Join(dir, fileInfo.Name()))
 			str := fmt.Sprintf("40000 %s\u0000", fileInfo.Name())

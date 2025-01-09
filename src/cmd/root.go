@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"GitClone/cmd/controls"
 	"github.com/spf13/cobra"
 	"os"
+	"src/cmd/controls"
 )
 
 var Settings map[string]string

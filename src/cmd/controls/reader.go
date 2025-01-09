@@ -1,8 +1,3 @@
-/*
-This file contains reader functions
-These include Read a blob object and a tree object
-*/
-
 package controls
 
 import (
@@ -10,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -64,8 +60,7 @@ func getObjectData(data []byte) ([]string, error) {
 }
 
 func ReadObject(readerType, hash string) (string, error) {
-
-	path := fmt.Sprintf("%s/objects/%v/%v", GitDir, hash[0:2], hash[2:])
+	path := filepath.Join(GitDir, "objects", hash[:2], hash[2:])
 	file, err := os.Open(path)
 	reader, _ := zlib.NewReader(io.Reader(file))
 	byteData, _ := io.ReadAll(reader)
@@ -81,12 +76,7 @@ func ReadObject(readerType, hash string) (string, error) {
 		if fileType == "tree" {
 			return getTreeContent(byteData), nil
 		}
-		parts, err := getObjectData(byteData)
-		if err != nil {
-			return "", err
-		}
-		result := strings.Join(parts[1:], "\n")
-		return result, nil
+		return string(byteData), nil
 	case "t":
 		if err != nil {
 			return "", err
